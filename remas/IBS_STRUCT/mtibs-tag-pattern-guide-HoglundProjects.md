@@ -1,6 +1,6 @@
-# MTIBS Tag Pattern Guide ? H?glund / Polish HMA Projects
+# MTIBS Tag Pattern Guide - Hoglund / Polish HMA Projects
 
-This guide describes the MTIBS tag patterns found in Polish HMA projects implemented by a third party (H?glund). The spreadsheet layout is the same GenSheet / List / detail-workbook model as other IBS vessels, but the tag naming style is different from the MT in-house pattern documented in `mtibs-tag-pattern-guide.md`.
+This guide describes the MTIBS tag patterns found in Polish HMA projects implemented by a third party (Hoglund). The spreadsheet layout is the same GenSheet / List / detail-workbook model as other IBS vessels, but the tag naming style is different from the MT in-house pattern documented in `mtibs-tag-pattern-guide.md`.
 
 Research sample: `Polish HMA Projects` GenSheet set for Remontowa B851 (files such as `Gmr100.xls`, `RemontowaB851_4_MAIN.xls`, `RemontowaB851_4_COM.xls`, `RemontowaB851_4_PMS.xls`). Source Excel files stay local and are not copied to GitHub.
 
@@ -15,7 +15,7 @@ MTIBS is an MT proprietary telegram used to send IBS data to shore. The `List` t
 A typical row looks like:
 
 ```text
-MTIBS1, 1, T,B=441_1_1_LS1, T,B=441_1_1_LS2, T,B=441_1_1_PS1, T,B=441_1_1_PS2, T,R=441_1_1_PS3, T,R=441_1_1_PS4, T,R=441_1_1_PS5, T,R=441_1_1_PS6, T,B=441_1_1_PS7, T,R=441_1_1_PT1, ...
+$MTIBS1,1,1,1,1,7.50,4.20,3.10,0.15,1,2.10,1.80,1,1,1,1,45.00,50.00,80.00,82.00,85.00,78.00,70.00,65.00,1,1,0,1,1,1,0*4A
 ```
 
 The first column is usually the telegram name, the second is the telegram number, and the remaining cells are comma-separated tag definitions.
@@ -40,7 +40,7 @@ Examples:
 
 ## Tag Name Families
 
-H?glund List tabs are dominated by short underscore-separated numeric tags. Compared with the MT in-house style (`326_00051_ZS1`), these tags use smaller middle segments and often encode P&ID valve or tank IDs directly.
+Hoglund List tabs are dominated by short underscore-separated numeric tags. Compared with the MT in-house style (`326_00051_ZS1`), these tags use smaller middle segments and often encode P&ID valve or tank IDs directly.
 
 | Family | Shape | Examples | Notes |
 |---|---|---|---|
@@ -54,7 +54,7 @@ H?glund List tabs are dominated by short underscore-separated numeric tags. Comp
 
 ## Structured Numeric Tags
 
-Typical H?glund equipment/point tag:
+Typical Hoglund equipment/point tag:
 
 ```text
 441_1_1_LS1
@@ -124,7 +124,7 @@ Treat this as a lookup hint, not a contract. The authoritative text is the match
 
 ### Group / Unit / Line Segments
 
-Unlike MT in-house five-digit equipment numbers (`00051`, `10001`), H?glund middle segments are short and often mirror drawing numbers:
+Unlike MT in-house five-digit equipment numbers (`00051`, `10001`), Hoglund middle segments are short and often mirror drawing numbers:
 
 | Segment pattern | Typical meaning |
 |---|---|
@@ -146,7 +146,7 @@ Examples:
 
 ### Suffix / Signal Role
 
-Suffixes are largely the same ISA-style letters seen on MT projects, with a few H?glund preferences.
+Suffixes are largely the same ISA-style letters seen on MT projects, with a few Hoglund preferences.
 
 | Suffix | Observed meaning / use | Typical type in MTIBS |
 |---|---|---|
@@ -219,7 +219,7 @@ These examples were cross-referenced from List tags into Remontowa B851 detail s
 
 ## Important Caveats
 
-- The H?glund tag shape is consistent enough for discovery, but final meaning still requires the detail workbook `Descr` row.
+- The Hoglund tag shape is consistent enough for discovery, but final meaning still requires the detail workbook `Descr` row.
 - Do not assume MT in-house five-digit equipment IDs. Most tags here use short group/unit/line segments or tank A-codes.
 - `_XY0` is stop/close and `_XY1` is start/open in this sample. Confirm before mapping dashboards.
 - Valve command vs feedback can look similar (`ZZH`/`ZZL` vs `ZSH`/`ZSL`). Prefer `BVAL` reference columns over guessing from the suffix alone.

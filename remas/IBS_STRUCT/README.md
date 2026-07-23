@@ -3,7 +3,7 @@
 This folder contains guides for MTIBS telegrams used to send IBS data to shore.
 
 - Start with `mtibs-tag-pattern-guide.md` for MT in-house vessel GenSheets.
-- Use `mtibs-tag-pattern-guide-HoglundProjects.md` for Polish HMA / H?glund third-party projects.
+- Use `mtibs-tag-pattern-guide-HoglundProjects.md` for Polish HMA / Hoglund third-party projects.
 
 ## Research Sources
 
@@ -29,7 +29,7 @@ The guide was derived from eight local vessel GenSheet folders provided for rese
 - Use the Hxxx detail workbooks (`Hxxx_COM`, `Hxxx_MAIN`, or `MT_Hxxx_Main`) to resolve `TagName`, `TaskName`, `Descr`, process section, alarm setup, and source references.
 
 
-## H?glund / Polish HMA Research Source
+## Hoglund / Polish HMA Research Source
 
 | Vessel folder | List source | MTIBS rows | Tags | Unique tags | Bool tags | Real tags |
 |---|---|---:|---:|---:|---:|---:|
