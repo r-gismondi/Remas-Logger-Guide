@@ -22,9 +22,7 @@ The guide was derived from eight local vessel GenSheet folders provided for rese
 ## Quick Rules
 
 - The `List` tab defines the MTIBS telegram rows.
-- ListDef labels look like `MTIBS1`, `MTIBS2`, and so on. The trailing digit is only the List sequence identifier.
-- The telegram structure identifier is `$MTIBS` without that digit. Decode payload fields against the ordered tag list for the matching List row.
-- Each List row normally carries up to 32 comma-separated data points.
+- Each row normally starts with `MTIBS<n>` and carries up to 32 comma-separated data points.
 - `T,B=<tag>` means the tag is sent as a boolean value, usually `0/1`.
 - `T,R=<tag>` means the tag is sent as a real/analog value.
 - Use the Hxxx detail workbooks (`Hxxx_COM`, `Hxxx_MAIN`, or `MT_Hxxx_Main`) to resolve `TagName`, `TaskName`, `Descr`, process section, alarm setup, and source references.
