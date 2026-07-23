@@ -6,13 +6,23 @@ This guide describes the patterns found in MTIBS telegram definitions for IBS sh
 
 MTIBS is an MT proprietary telegram used to send IBS data to shore. The `List` tab in `Gmr100.xls` or `Gmr100PrilogSetup.xls` defines how many MTIBS telegrams are sent and which tags are included in each telegram.
 
-A typical row looks like:
+In the GenSheet `List` tab, rows are labeled `MTIBS1`, `MTIBS2`, and so on. That trailing digit is the ListDef row/sequence identifier used to define and order telegrams. It is not part of the MTIBS telegram structure itself.
+
+The telegram structure identifier is `$MTIBS` without the ListDef digit. A correct structure sample looks like:
+
+```text
+$MTIBS ,404_10004_TT ,404_10005_TT ,404_10005_XA ,404_10006_TT ,404_10006_XA ,404_10006_XC ,404_10007_IT_ ,404_10007_IT_A ,404_10007_IT_B
+```
+
+On the wire, received sentences may still appear as `$MTIBS1`, `$MTIBS2`, and so on so the receiver can tell telegram instances apart. Map those sentences to the corresponding List row by sequence number, then decode the payload fields against the `$MTIBS` tag order for that row.
+
+A typical List-tab definition row looks like:
 
 ```text
 MTIBS1, 1, T,B=900_00001_XA, T,R=801_00001, T,R=801_00001_LT1, ...
 ```
 
-The first column is usually the telegram name, the second is the telegram number, and the remaining cells are comma-separated tag definitions.
+The first column is the ListDef telegram label (`MTIBS` + sequence digit), the second is the telegram number, and the remaining cells are comma-separated tag definitions for the `$MTIBS` payload layout.
 
 ## List Token Format
 
@@ -67,6 +77,7 @@ Observed examples:
 | `357`, `358`, `359` | Tank/level and utility values in several vessels. |
 | `404`, `626` | Engine / machinery values in 280/312 class examples. |
 | `601` | Main engine/thruster/engine fuel and status values in several examples. |
+| `610` | Generators. |
 | `803` | Bilge/cargo/bilge alarm examples. |
 | `867`, `871`, `873` | Electrical/UPS/power-related alarms and status examples. |
 | `900` | Common/system alarms or generic system points. |
