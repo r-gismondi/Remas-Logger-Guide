@@ -1,8 +1,9 @@
 # IBS_STRUCT Guides
 
-This folder contains the guide for MTIBS telegrams used to send IBS data to shore.
+This folder contains guides for MTIBS telegrams used to send IBS data to shore.
 
-Start with `mtibs-tag-pattern-guide.md`.
+- Start with `mtibs-tag-pattern-guide.md` for MT in-house vessel GenSheets.
+- Use `mtibs-tag-pattern-guide-HoglundProjects.md` for Polish HMA / Hoglund third-party projects.
 
 ## Research Sources
 
@@ -26,3 +27,16 @@ The guide was derived from eight local vessel GenSheet folders provided for rese
 - `T,B=<tag>` means the tag is sent as a boolean value, usually `0/1`.
 - `T,R=<tag>` means the tag is sent as a real/analog value.
 - Use the Hxxx detail workbooks (`Hxxx_COM`, `Hxxx_MAIN`, or `MT_Hxxx_Main`) to resolve `TagName`, `TaskName`, `Descr`, process section, alarm setup, and source references.
+
+
+## Hoglund / Polish HMA Research Source
+
+| Vessel folder | List source | MTIBS rows | Tags | Unique tags | Bool tags | Real tags |
+|---|---|---:|---:|---:|---:|---:|
+| `Polish HMA Projects` (Remontowa B851) | `Gmr100.xls` | 69 | 2167 | 2167 | 1751 | 416 |
+
+Quick differences vs MT in-house tags:
+
+- Prefer short segments such as `441_1_1_LS1` and valve IDs such as `512_1_02_03_ZSH`.
+- Tank objects often use A-codes such as `512_1_A044_LT`.
+- Detail workbooks are project-prefixed (`RemontowaB851_4_MAIN.xls`) with the same sheet families (`AIS`, `DIS`, `MOT`, `BVAL`, `TK`).

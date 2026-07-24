@@ -9,7 +9,7 @@ MTIBS is an MT proprietary telegram used to send IBS data to shore. The `List` t
 A typical row looks like:
 
 ```text
-MTIBS1, 1, T,B=900_00001_XA, T,R=801_00001, T,R=801_00001_LT1, ...
+$MTIBS1,1,1,1,1,1,1,139.58,88.80,1,1,1,1,1,1,1,1,1,1,1,1,0,0,1,1,1,1,1,1,1,1,1,1,1*4E
 ```
 
 The first column is usually the telegram name, the second is the telegram number, and the remaining cells are comma-separated tag definitions.
@@ -67,6 +67,7 @@ Observed examples:
 | `357`, `358`, `359` | Tank/level and utility values in several vessels. |
 | `404`, `626` | Engine / machinery values in 280/312 class examples. |
 | `601` | Main engine/thruster/engine fuel and status values in several examples. |
+| `610` | Generators. |
 | `803` | Bilge/cargo/bilge alarm examples. |
 | `867`, `871`, `873` | Electrical/UPS/power-related alarms and status examples. |
 | `900` | Common/system alarms or generic system points. |
