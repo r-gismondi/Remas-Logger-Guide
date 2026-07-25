@@ -10,7 +10,7 @@ This document describes the binary payload sent when `function.ini` enables the 
 
 ```ini
 TCSLogger         = 2    # 1=Serial, 2=UDP
-TCSLoggerOSNumber = 0    # Only this OS outputs TCS diagnostic data
+TCSLoggerOSNumber = 1    # Only this OS outputs TCS diagnostic data
 ```
 
 And when `communication.ini` defines the network endpoint, for example:
