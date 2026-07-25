@@ -213,59 +213,247 @@ ASCII version strings, 10 bytes each slot (not necessarily null-terminated if th
 | `szCCFilesVersion` | 3 | `MTGateway.exe` |
 | `szCCFilesVersion` | 4 | `MTGatewayIO.dll` |
 
-## Field Layout
+## Field Layout for Dashboard Mapping
 
-Offsets below assume `#pragma pack(1)` and the constants in this manual.
+This section is written for project engineers building remote-monitoring dashboards.
+Use it to decide **which datapoint belongs on which widget**, not only how to decode bytes.
+
+Offsets assume `#pragma pack(1)` and the constants in this manual.
 Total size: **2080 bytes**.
+Windows `long` is 4 bytes. `SYSTEMTIME` is 16 bytes (`8 x WORD`).
 
-| Offset | Type | Field | Count / shape | Unit / notes |
+### How thruster indexes work
+
+Most thruster values are arrays of 10 slots (`MAX_NO_THRUSTER`).
+
+| Concept | Meaning for dashboards |
+|---|---|
+| Slot index `i` | `0` = first thruster filled by the OS vessel thruster list, then `1`, `2`, ... |
+| Unused slots | Remain `0` after zero-init when the vessel has fewer than 10 thrusters. |
+| Vessel thruster name | Not in this payload. Map slot `i` to the vessel thruster name/number from project config (for example Thruster 1 = bow tunnel). |
+| Bitfield bit `i` | Same thruster as array slot `i`. Example: bit 0 of `sThrusterRunning` is thruster slot 0. |
+
+Practical rule: build one thruster card/widget per configured thruster, bind all `*[i]` and bit `i` fields to that card, and hide unused slots.
+
+### Suggested dashboard groups
+
+| Dashboard area | Use these fields |
+|---|---|
+| Message health / freshness | `i64TimeStamp`, `dwBytePattern1`, `dwBytePattern2`, payload length |
+| Thruster overview tiles | `sThrusterType`, `sThrusterRunning`, `sThrusterReady`, `sThrusterFault`, `sActiveCmdOwner` |
+| Command / control ownership | `sActiveCmdOwner`, `sActiveCommandStand`, `sAcceptDP`, `sAcceptAutopilot`, `sBackupModeActive` |
+| Thruster demand vs feedback | speed/pitch/angle/thrust reference + feedback pairs |
+| Power / load | `dThrusterLoad`, `sPowerReduced`, `sClutchEngaged` |
+| Machinery auxiliaries | hydraulic pumps, lift-cylinder locks |
+| Control mode labels | `sDriveProgram`, `sThrusterControlMode` |
+| Redundancy / voting | `sTCVoteStatus`, `sCCPrefCC`, `sCCVoteBuffer` |
+| Network topology health | `lOSstatus`, `sCCstatus`, `lTCstatus`, `lLCstatus`, `lTHRDEVstatus` |
+| Software inventory | `szOSFilesVersion`, `szCCFilesVersion` |
+| Vessel-specific extras | `lIndicators`, `sButtonInd`, `sButtonDisable`, `dAnalogIndValue` (need `TCSView.ini`) |
+
+---
+
+### 1. Packet time and integrity
+
+| Offset | Field | Type | What it means | Dashboard use |
 |---:|---|---|---|---|
-| 0 | `SYSTEMTIME` | `i64TimeStamp` | 1 | Local OS time when the snapshot was captured. |
-| 16 | `short` | `sThrusterType` | `[10]` | Thruster type enum. |
-| 36 | `short` | `sActiveCmdOwner` | `[10]` | 0=None, 1=DP, 2=Lever, 3=Autopilot. |
-| 56 | `short` | `sActiveCommandStand` | `[10]` | Active command stand for each thruster. |
-| 76 | `short` | `sAcceptDP` | 1 | Bitfield: DP enabled per thruster. |
-| 78 | `short` | `sAcceptAutopilot` | 1 | Bitfield: Autopilot enabled per thruster. |
-| 80 | `short` | `sBackupModeActive` | 1 | Bitfield: backup mode active. |
-| 82 | `short` | `sThrusterRunning` | 1 | Bitfield: thruster running. |
-| 84 | `short` | `sThrusterReady` | 1 | Bitfield: thruster ready. |
-| 86 | `short` | `sThrusterFault` | 1 | Bitfield: thruster fault. |
-| 88 | `short` | `sPowerReduced` | 1 | Bitfield: PMS power reduced. |
-| 90 | `short` | `sClutchEngaged` | 1 | Bitfield: clutch engaged. |
-| 92 | `short` | `sHydrPump1Running` | 1 | Bitfield: hydraulic pump 1 running. |
-| 94 | `short` | `sHydrPump2Running` | 1 | Bitfield: hydraulic pump 2 running. |
-| 96 | `short` | `sLiftCylinderUpperLocked` | 1 | Bitfield: lift cylinder upper locked. |
-| 98 | `short` | `sLiftCylinderLowerLocked` | 1 | Bitfield: lift cylinder lower locked. |
-| 100 | `float` | `dThrusterSpeedReference` | `[10]` | Thruster speed reference. |
-| 140 | `float` | `dThrusterSpeedFeedback` | `[10]` | Thruster speed feedback. |
-| 180 | `float` | `dThrusterPitchReference` | `[10]` | Pitch reference. |
-| 220 | `float` | `dThrusterPitchFeedback` | `[10]` | Pitch feedback. |
-| 260 | `float` | `dThrusterAngleReference` | `[10]` | Azimuth/rudder angle reference. |
-| 300 | `float` | `dThrusterAngleFeedback` | `[10]` | Azimuth/rudder angle feedback. |
-| 340 | `float` | `dThrusterLoad` | `[10]` | Thruster load (kW). |
-| 380 | `float` | `dThrustCommand` | `[10]` | Calculated thrust command. |
-| 420 | `float` | `dThrustFeedback` | `[10]` | Calculated thrust feedback. |
-| 460 | `short` | `sDriveProgram` | `[10]` | 0=transit / free running, 1=manoeuvre. |
-| 480 | `short` | `sThrusterControlMode` | `[10]` | 0=combinator, 1=constant speed. |
-| 500 | `short` | `sTCVoteStatus` | `[6]` | Vote reply bitmask from first 6 TCs. |
-| 512 | `short` | `sCCPrefCC` | `[3]` | Preferred TCSCC bitmask for TCSCC1-3. |
-| 518 | `short` | `sCCVoteBuffer` | `[3][5]` | TCSCC voting values from TCSCC1-3. |
-| 548 | `char` | `szOSFilesVersion` | `[5][10]` | OS file version strings. |
-| 598 | `char` | `szCCFilesVersion` | `[5][10]` | CC/gateway file version strings. |
-| 648 | `long` | `lOSstatus` | 1 | OS network OK bitmask. |
-| 652 | `short` | `sCCstatus` | 1 | DPCC/TCSCC network OK bitmask. |
-| 654 | `long` | `lTCstatus` | 1 | TC/gateway network OK bitmask. |
-| 658 | `__int64` | `lLCstatus` | 1 | Lever-card network OK bitmask. |
-| 666 | `long` | `lTHRDEVstatus` | 1 | Thruster-device network OK bitmask. |
-| 670 | `long` | `lIndicators` | `[10]` | Digital indicators from `TCSView.ini`. |
-| 710 | `short` | `sButtonInd` | `[10][24]` | Button LED/indication bits per group. |
-| 1190 | `short` | `sButtonDisable` | `[10][24]` | Button disable / not-available bits per group. |
-| 1670 | `float` | `dAnalogIndValue` | `[10][10]` | Analog indication values from GUI config. |
-| 2070 | `short` | `dwCRC` | 1 | Present in struct; not filled by current capture path. |
-| 2072 | `long` | `dwBytePattern1` | 1 | Marker `MTMT` (`0x544D544D`). |
-| 2076 | `long` | `dwBytePattern2` | 1 | Marker `_TCS` (`0x5343545F`). |
+| 0 | `i64TimeStamp` | `SYSTEMTIME` | Local OS clock when the snapshot was captured. | Show "last update" / stale-data alarm if older than expected (~1 s cadence). |
+| 2070 | `dwCRC` | `short` | Reserved checksum field. | Do **not** rely on this in current MTOS; capture path leaves it `0`. |
+| 2072 | `dwBytePattern1` | `long` | Fixed marker `MTMT` (`0x544D544D`). | Validate packet framing before decoding. |
+| 2076 | `dwBytePattern2` | `long` | Fixed marker `_TCS` (`0x5343545F`). | Confirm this is TCS diagnostic data, not DP Remas. |
 
-Windows `long` is 4 bytes in this codebase. `SYSTEMTIME` is 16 bytes (`8 x WORD`).
+---
+
+### 2. Thruster identity and who is commanding it
+
+All arrays below are `[10]` unless noted.
+
+| Offset | Field | Type | What it means | Dashboard use |
+|---:|---|---|---|---|
+| 16 | `sThrusterType[i]` | `short` | Physical thruster kind: tunnel, azimuth, main prop, rudder, combi, Voith. | Choose icon/label per thruster tile. See ThrusterType enum. |
+| 36 | `sActiveCmdOwner[i]` | `short` | Who currently owns thruster command: None / DP / Lever / Autopilot. | Primary "In command" badge on each thruster. |
+| 56 | `sActiveCommandStand[i]` | `short` | Active command stand id for that thruster (`CS1=1`, `CS2=2`, ...). | Show which bridge/wing station holds command when owner is lever/manual. |
+
+---
+
+### 3. Thruster status bits (one short, bits 0..9)
+
+These are **not** per-thruster arrays. Each field is one `short` where **bit `i` = thruster slot `i`**.
+Decode with `(value & (1 << i)) != 0`.
+
+| Offset | Field | What bit `i` means | Dashboard use |
+|---:|---|---|---|
+| 76 | `sAcceptDP` | Thruster is enabled/available for DP control. | Show whether DP can take this thruster. |
+| 78 | `sAcceptAutopilot` | Thruster is enabled/available for autopilot. | Show AP availability. |
+| 80 | `sBackupModeActive` | Thruster is in TCS backup mode. | Warning/state chip; backup is a special local operating mode. |
+| 82 | `sThrusterRunning` | Running feedback is true. | Green running indication. |
+| 84 | `sThrusterReady` | Ready feedback is true. | Ready/standby indication. |
+| 86 | `sThrusterFault` | Fault feedback is true. | Alarm/red state. |
+| 88 | `sPowerReduced` | PMS has reduced thruster power. | Power-limit warning. |
+| 90 | `sClutchEngaged` | Engine/clutch 1 engaged. | Clutch status lamp. |
+| 92 | `sHydrPump1Running` | Hydraulic pump 1 running. | Aux machinery status. |
+| 94 | `sHydrPump2Running` | Hydraulic pump 2 running. | Aux machinery status. |
+| 96 | `sLiftCylinderUpperLocked` | Retractable thruster locked upper. | Useful on retractable units; ignore if vessel has none. |
+| 98 | `sLiftCylinderLowerLocked` | Retractable thruster locked lower. | Same as above. |
+
+Typical overview logic for thruster `i`:
+
+1. Fault bit set → show fault.
+2. Else running bit set → show running.
+3. Else ready bit set → show ready.
+4. Else show stopped/unavailable.
+
+---
+
+### 4. Thruster command and feedback analogs
+
+These are the main live values for remote thruster monitoring.
+All are `float[10]`.
+
+| Offset | Field | Typical engineering meaning | Dashboard use |
+|---:|---|---|---|
+| 100 | `dThrusterSpeedReference[i]` | Commanded RPM/speed signal from TCS (normally normalized about `-1..1`, where `±1` is full scale). | Command needle / setpoint. |
+| 140 | `dThrusterSpeedFeedback[i]` | Measured RPM/speed feedback signal (same normalized scale in normal RPM configs; some vessels use shaft-speed feedback instead). | Feedback needle; compare to reference for follow-up error. |
+| 180 | `dThrusterPitchReference[i]` | Commanded pitch signal (normally normalized about `-1..1`). | Pitch setpoint. Relevant for CPP / pitch-controlled units. |
+| 220 | `dThrusterPitchFeedback[i]` | Measured pitch feedback (same normalized scale). | Pitch feedback. |
+| 260 | `dThrusterAngleReference[i]` | Commanded azimuth or rudder angle in **degrees**. | Direction setpoint for azimuth/rudder widgets. |
+| 300 | `dThrusterAngleFeedback[i]` | Measured azimuth/rudder angle in **degrees**. | Direction feedback. |
+| 340 | `dThrusterLoad[i]` | Thruster electrical/mechanical load in **kW**. Source may leave a very large negative sentinel when no power feedback is configured. | Load bar / kW readout. Treat extreme negatives as "no data". |
+| 380 | `dThrustCommand[i]` | Calculated relative thrust command, typically normalized to max thrust (about `-1..1`). | Overall thrust demand gauge. |
+| 420 | `dThrustFeedback[i]` | Calculated relative thrust feedback, typically normalized to max thrust (about `-1..1`). | Overall thrust achieved gauge. |
+
+Notes for engineers:
+
+- Prefer **reference + feedback pairs** on the same widget so operators can see demand vs response.
+- Speed/pitch are usually **normalized signals**, not raw RPM/% text unless the vessel project documents a conversion.
+- Angle fields are already in degrees in this payload.
+- For tunnel thrusters, angle widgets are usually not meaningful; for rudders, speed/pitch may be unused.
+
+---
+
+### 5. Thruster control settings
+
+| Offset | Field | Type | What it means | Dashboard use |
+|---:|---|---|---|---|
+| 460 | `sDriveProgram[i]` | `short[10]` | `0` = free running / transit program, `1` = manoeuvre program. | Label "Transit" vs "Manoeuvre" on thruster or vessel status. |
+| 480 | `sThrusterControlMode[i]` | `short[10]` | `0` = combinator mode, `1` = constant-speed mode. | Show how RPM/pitch are being coordinated. |
+
+---
+
+### 6. TCS voting and preferred controller
+
+These support redundancy views (which TCSCC is preferred / in use, and vote health).
+
+| Offset | Field | Type | What it means | Dashboard use |
+|---:|---|---|---|---|
+| 500 | `sTCVoteStatus[j]` | `short[6]` | Vote-result bitmask from the first six thruster-controller vote replies. | Redundancy health for TC voting. Decode with Vote Result Bitmask. |
+| 512 | `sCCPrefCC[k]` | `short[3]` | Preferred TCSCC bitmask for TCSCC1-3 (`k=0..2`). | Show preferred controller preference, not a device-id number. |
+| 518 | `sCCVoteBuffer[k][n]` | `short[3][5]` | Raw vote channels from TCSCC1-3. `n`: surge, sway, yaw, thruster/status, spare. | Advanced diagnostics; usually not first-page dashboard values. |
+
+---
+
+### 7. Software versions on OS and controllers
+
+Each string slot is 10 ASCII bytes (may be unterminated if fully filled).
+
+| Offset | Field | Slot | Source file | Dashboard use |
+|---:|---|---:|---|---|
+| 548 | `szOSFilesVersion` | 0 | `MTOS.exe` | OS application version. |
+| 548 | `szOSFilesVersion` | 1 | `MTOSIO.dll` | OS I/O library version. |
+| 548 | `szOSFilesVersion` | 2 | `MTOPPanel.dll` | Operator panel library version. |
+| 548 | `szOSFilesVersion` | 3..4 | unused by current capture | Ignore. |
+| 598 | `szCCFilesVersion` | 0 | `DPCC.exe` | DP controller version. |
+| 598 | `szCCFilesVersion` | 1 | `MTIO.dll` | Controller I/O library version. |
+| 598 | `szCCFilesVersion` | 2 | `TCSCC.exe` | TCS controller version. |
+| 598 | `szCCFilesVersion` | 3 | `MTGateway.exe` | Gateway version. |
+| 598 | `szCCFilesVersion` | 4 | `MTGatewayIO.dll` | Gateway I/O version. |
+
+Use these on a "System info / versions" page, not on the live thruster overview.
+
+---
+
+### 8. Network node health bitmasks
+
+A set bit means that node currently reports network status OK.
+
+| Offset | Field | Type | Bit meaning | Dashboard use |
+|---:|---|---|---|---|
+| 648 | `lOSstatus` | `long` | Bit `DeviceIndex` of each OS. | OS online matrix. |
+| 652 | `sCCstatus` | `short` | Bits `0..2` = DPCC1-3; bits `3..5` = TCSCC/LTC1-3. | Controller online lamps. |
+| 654 | `lTCstatus` | `long` | Bit `DeviceIndex` of thruster cards/gateways typed as TC. | Thruster-card communication health. |
+| 658 | `lLCstatus` | `__int64` | Bit `DeviceIndex` of lever cards. | Lever-card health. |
+| 666 | `lTHRDEVstatus` | `long` | Bit `DeviceIndex` of thruster devices. | Drive/device health. |
+
+Map bit positions to vessel device names from `communication.ini` / network config. Do not assume every vessel uses the same device indexes.
+
+---
+
+### 9. Vessel-specific GUI indicators
+
+These fields mirror TCS GUI configuration and are **project-specific**.
+Do not hard-code global meanings; resolve labels from vessel `TCSView.ini` / GUI config.
+
+| Offset | Field | Type | What it means | Dashboard use |
+|---:|---|---|---|---|
+| 670 | `lIndicators[i]` | `long[10]` | Up to 32 digital indicator bits for thruster `i` (`bit 0..31`). | Custom lamps defined for that vessel thruster page. |
+| 710 | `sButtonInd[i][g]` | `short[10][24]` | Button LED/indication bits for thruster `i`, group `g` (`0..23`). Bits `0..4` = buttons in that group. | Recreate custom button feedback states if required ashore. |
+| 1190 | `sButtonDisable[i][g]` | `short[10][24]` | Same packing; bit set means button is disabled / not available. | Grey-out / unavailable indication for custom controls. |
+| 1670 | `dAnalogIndValue[i][a]` | `float[10][10]` | Analog indication `a` (`0..9`) for thruster `i`. | Custom gauges (pressure, current, etc.) only when the vessel defines them. |
+
+If the remote dashboard only needs standard thruster monitoring, you can ignore this whole group and still cover running/fault/command/feedback/load.
+
+---
+
+### Compact binary offset map
+
+Use this when implementing parsers. For meaning, use the sections above.
+
+| Offset | Type | Field | Shape |
+|---:|---|---|---|
+| 0 | `SYSTEMTIME` | `i64TimeStamp` | 1 |
+| 16 | `short` | `sThrusterType` | `[10]` |
+| 36 | `short` | `sActiveCmdOwner` | `[10]` |
+| 56 | `short` | `sActiveCommandStand` | `[10]` |
+| 76 | `short` | `sAcceptDP` | 1 |
+| 78 | `short` | `sAcceptAutopilot` | 1 |
+| 80 | `short` | `sBackupModeActive` | 1 |
+| 82 | `short` | `sThrusterRunning` | 1 |
+| 84 | `short` | `sThrusterReady` | 1 |
+| 86 | `short` | `sThrusterFault` | 1 |
+| 88 | `short` | `sPowerReduced` | 1 |
+| 90 | `short` | `sClutchEngaged` | 1 |
+| 92 | `short` | `sHydrPump1Running` | 1 |
+| 94 | `short` | `sHydrPump2Running` | 1 |
+| 96 | `short` | `sLiftCylinderUpperLocked` | 1 |
+| 98 | `short` | `sLiftCylinderLowerLocked` | 1 |
+| 100 | `float` | `dThrusterSpeedReference` | `[10]` |
+| 140 | `float` | `dThrusterSpeedFeedback` | `[10]` |
+| 180 | `float` | `dThrusterPitchReference` | `[10]` |
+| 220 | `float` | `dThrusterPitchFeedback` | `[10]` |
+| 260 | `float` | `dThrusterAngleReference` | `[10]` |
+| 300 | `float` | `dThrusterAngleFeedback` | `[10]` |
+| 340 | `float` | `dThrusterLoad` | `[10]` |
+| 380 | `float` | `dThrustCommand` | `[10]` |
+| 420 | `float` | `dThrustFeedback` | `[10]` |
+| 460 | `short` | `sDriveProgram` | `[10]` |
+| 480 | `short` | `sThrusterControlMode` | `[10]` |
+| 500 | `short` | `sTCVoteStatus` | `[6]` |
+| 512 | `short` | `sCCPrefCC` | `[3]` |
+| 518 | `short` | `sCCVoteBuffer` | `[3][5]` |
+| 548 | `char` | `szOSFilesVersion` | `[5][10]` |
+| 598 | `char` | `szCCFilesVersion` | `[5][10]` |
+| 648 | `long` | `lOSstatus` | 1 |
+| 652 | `short` | `sCCstatus` | 1 |
+| 654 | `long` | `lTCstatus` | 1 |
+| 658 | `__int64` | `lLCstatus` | 1 |
+| 666 | `long` | `lTHRDEVstatus` | 1 |
+| 670 | `long` | `lIndicators` | `[10]` |
+| 710 | `short` | `sButtonInd` | `[10][24]` |
+| 1190 | `short` | `sButtonDisable` | `[10][24]` |
+| 1670 | `float` | `dAnalogIndValue` | `[10][10]` |
+| 2070 | `short` | `dwCRC` | 1 |
+| 2072 | `long` | `dwBytePattern1` | 1 |
+| 2076 | `long` | `dwBytePattern2` | 1 |
 
 ## Receiver Checklist
 
@@ -274,4 +462,5 @@ Windows `long` is 4 bytes in this codebase. `SYSTEMTIME` is 16 bytes (`8 x WORD`
 3. Validate trailing markers `MTMT` / `_TCS`.
 4. Confirm payload length is **2080** bytes for the current layout.
 5. Decode thruster bitfields with thruster index as bit position.
-6. Resolve button/analog meanings from vessel `TCSView.ini` / GUI config, not from fixed global enums.
+6. Map thruster slot indexes to vessel thruster names from project config.
+7. Resolve custom button/analog meanings from vessel `TCSView.ini` / GUI config only when those widgets are required.
