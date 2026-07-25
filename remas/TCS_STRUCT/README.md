@@ -6,4 +6,6 @@ Guides for project engineers reading TCS datapoint values to build remote-monito
 |---|---|
 | `tcs-logger-mtos-current.md` | Current TCSLogger datapoints: what each one is, and what the values mean. |
 
+Word versions are in `Word Document/` with the same base filenames.
+
 Data is enabled with `TCSLogger` / `TCSLoggerOSNumber` in `function.ini` and `[TCS_STRUCT]` in `communication.ini`.
