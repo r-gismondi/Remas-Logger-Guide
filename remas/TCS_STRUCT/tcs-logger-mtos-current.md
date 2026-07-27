@@ -76,7 +76,7 @@ Per thruster slot `i` (`0..9`).
 | Datapoint | What it is | What the value means |
 |---|---|---|
 | `sThrusterType[i]` | Physical type of thruster | `1` Tunnel, `2` Azimuth, `3` Main prop, `4` Rudder, `5` Combi, `6` Voith |
-| `sActiveCmdOwner[i]` | Who currently commands this thruster | `0` None, `1` DP, `2` Lever, `3` Autopilot |
+| `sActiveCmdOwner[i]` | Who currently commands this thruster | `0` None, `1` DP, `2` Lever, `3` Autopilot, `4` Service mode, `5` GUI / local, `6` External |
 | `sActiveCommandStand[i]` | Which command stand owns it | Command stand number: `1` = CS1, `2` = CS2, and so on. Useful when owner is Lever. |
 
 ---
@@ -229,6 +229,9 @@ If the dashboard only needs standard thruster monitoring, you can skip this whol
 | 1 | DP |
 | 2 | Lever |
 | 3 | Autopilot |
+| 4 | Service mode |
+| 5 | GUI / local |
+| 6 | External |
 
 ### Drive program (`sDriveProgram`)
 
