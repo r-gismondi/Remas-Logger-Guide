@@ -39,7 +39,7 @@ Some status datapoints are packed into one number:
 | Bit `i` set | That condition is true for thruster slot `i` |
 | Bit `i` clear | That condition is false for thruster slot `i` |
 
-Example: if `sThrusterRunning = 5`, bits 0 and 2 are set → thrusters 0 and 2 are running.
+Example: if `sThrusterRunning = 5`, bits 0 and 2 are set -> thrusters 0 and 2 are running.
 
 ## Suggested dashboard use
 
@@ -100,12 +100,36 @@ Each datapoint below is one number. **Bit `i` = thruster slot `i`.**
 | `sLiftCylinderUpperLocked` | Retractable thruster upper lock | Bit set = locked in upper position. Ignore if vessel has no retractables. |
 | `sLiftCylinderLowerLocked` | Retractable thruster lower lock | Bit set = locked in lower position. Ignore if vessel has no retractables. |
 
+For `sLiftCylinderUpperLocked` and `sLiftCylinderLowerLocked`, bit weight depends on thruster number (`#1` = bit 0, `#2` = bit 1, ...):
+
+| Thruster number | Bit weight |
+|---|---:|
+| #1 | 1 |
+| #2 | 2 |
+| #3 | 4 |
+| #4 | 8 |
+| #5 | 16 |
+| #6 | 32 |
+| #7 | 64 |
+| #8 | 128 |
+| #9 | 256 |
+| #10 | 512 |
+
+To calculate an expected value, add the bit weights of the retractable thrusters that currently have that lock active. Clear bits for thrusters that do not have the lock (or are not retractable).
+
+Examples:
+
+- Retractables `#3` and `#4`, both upper-locked -> Upper = `4 + 8 = 12`, Lower = `0`
+- Retractables `#2` and `#4`, only `#2` lower-locked -> Lower = `2`, Upper = `0`
+- Retractables `#2` and `#4`, both lower-locked -> Lower = `2 + 8 = 10`
+
+
 Common thruster state logic for slot `i`:
 
-1. Fault bit set → Fault
-2. Else running bit set → Running
-3. Else ready bit set → Ready
-4. Else → Stopped / unavailable
+1. Fault bit set -> Fault
+2. Else running bit set -> Running
+3. Else ready bit set -> Ready
+4. Else -> Stopped / unavailable
 
 ---
 
