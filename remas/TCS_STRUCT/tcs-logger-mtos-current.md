@@ -221,13 +221,15 @@ Map bit positions to vessel device names using the vessel network configuration.
 
 These are project-specific. Labels come from vessel `TCSView.ini` / GUI config, not from a global standard.
 
-`lIndicators[i]` is the live on/off state of the **NOTIFICATIONS** lamps on the TCS page for thruster slot `i`. Those lamps are configured in `TCSView.ini` as `IND#Setup` (`IND1Setup` ... `IND32Setup`). The payload carries only the lamp bits, not the text. Button widgets such as Start/Stop/Reset are `sButtonInd` / `sButtonDisable`, not `lIndicators`.
+`lIndicators[i]` is the live on/off state of the **NOTIFICATIONS** lamps on the TCS page for thruster slot `i`. Those lamps are configured in `TCSView.ini` as `IND#Setup` (`IND1Setup` ... `IND32Setup`). The payload carries only the lamp bits, not the text.
+
+`sButtonInd[i][g]` is the live LED state of the custom **button groups** on that same TCS page (Start / Stop / Reset and other project buttons). Those buttons are configured in `TCSView.ini` as `BTN#Setup` (`BTN1Setup` ... `BTN120Setup`). `sButtonDisable[i][g]` uses the same packing: bit set means that button is disabled / not available. Standard command widgets such as Bridge / DP/JS / Autopilot / Manual are not this datapoint.
 
 | Datapoint | What it is | What the value means |
 |---|---|---|
 | `lIndicators[i]` | NOTIFICATIONS lamps for thruster `i` | 32-bit bitfield of `IND#Setup` lamps. `IND1Setup` = bit 0, `IND2Setup` = bit 1, ... `IND32Setup` = bit 31. Bit set = lamp on. Combined value is the sum of those bit weights. Lamp text comes from that `IND#Setup` entry. |
-| `sButtonInd[i][g]` | Custom button LED state | Thruster `i`, button group `g` (`0..23`). Bits `0..4` are the five buttons in that group. Bit set = indication on. |
-| `sButtonDisable[i][g]` | Custom button unavailable state | Same packing as above. Bit set = button disabled / not available. |
+| `sButtonInd[i][g]` | Custom button LED state for thruster `i`, group `g` | 5-bit field. Group `g` (`0..23`) holds five `BTN#Setup` buttons. Bit `0` = first button in the group, bit `4` = fifth. Bit set = LED on. Combined value is `0..31`. |
+| `sButtonDisable[i][g]` | Custom button unavailable state | Same packing as `sButtonInd[i][g]`. Bit set = button disabled / not available. |
 | `dAnalogIndValue[i][a]` | Custom analog indication | Thruster `i`, analog slot `a` (`0..9`). Meaning/unit come from vessel GUI config. |
 
 For `lIndicators[i]`, each value is one 32-bit number for thruster slot `i`. `TCSView.ini` keys are 1-based (`IND1Setup` is channel 0 / bit 0):
@@ -281,6 +283,60 @@ Examples:
 - `IND1Setup`, `IND2Setup`, and `IND5Setup` on -> `1 + 2 + 16 = 19`
 - Only `IND32Setup` on -> unsigned `2147483648`, signed `-2147483648`
 - Example TCS page with `IND1Setup` = THRUSTER RUNNING (on) and `IND2Setup` = BACKUP IN COMMAND (off) -> `1`
+
+For `sButtonInd[i][g]`, each value is one 5-bit number for button group `g` on thruster slot `i`. There are 24 groups (`g = 0..23`) and five buttons per group. `TCSView.ini` keys are 1-based and run in group order: group `0` is `BTN1Setup`..`BTN5Setup`, group `1` is `BTN6Setup`..`BTN10Setup`, and so on through group `23` = `BTN116Setup`..`BTN120Setup`.
+
+Bit weights inside one group:
+
+| Button in group | Bit | Bit weight | `TCSView.ini` key |
+|---|---:|---:|---|
+| 1st | 0 | 1 | `BTN{g*5+1}Setup` |
+| 2nd | 1 | 2 | `BTN{g*5+2}Setup` |
+| 3rd | 2 | 4 | `BTN{g*5+3}Setup` |
+| 4th | 3 | 8 | `BTN{g*5+4}Setup` |
+| 5th | 4 | 16 | `BTN{g*5+5}Setup` |
+
+The payload stores each group as a `short`. Only bits `0..4` are used, so each `sButtonInd[i][g]` value is `0..31`. Channel `n` in that group is on when `(value & bit_weight) != 0`. Unused buttons in a group stay `0`. Button labels come from that `BTN#Setup` entry. Group titles on the TCS page (for example RESET DRIVE, THRUSTER) come from the vessel GUI layout, not from this bitfield.
+
+Group-to-key map:
+
+| Group `g` | `sButtonInd[i][g]` | `TCSView.ini` keys |
+|---:|---|---|
+| 0 | group 0 | `BTN1Setup` .. `BTN5Setup` |
+| 1 | group 1 | `BTN6Setup` .. `BTN10Setup` |
+| 2 | group 2 | `BTN11Setup` .. `BTN15Setup` |
+| 3 | group 3 | `BTN16Setup` .. `BTN20Setup` |
+| 4 | group 4 | `BTN21Setup` .. `BTN25Setup` |
+| 5 | group 5 | `BTN26Setup` .. `BTN30Setup` |
+| 6 | group 6 | `BTN31Setup` .. `BTN35Setup` |
+| 7 | group 7 | `BTN36Setup` .. `BTN40Setup` |
+| 8 | group 8 | `BTN41Setup` .. `BTN45Setup` |
+| 9 | group 9 | `BTN46Setup` .. `BTN50Setup` |
+| 10 | group 10 | `BTN51Setup` .. `BTN55Setup` |
+| 11 | group 11 | `BTN56Setup` .. `BTN60Setup` |
+| 12 | group 12 | `BTN61Setup` .. `BTN65Setup` |
+| 13 | group 13 | `BTN66Setup` .. `BTN70Setup` |
+| 14 | group 14 | `BTN71Setup` .. `BTN75Setup` |
+| 15 | group 15 | `BTN76Setup` .. `BTN80Setup` |
+| 16 | group 16 | `BTN81Setup` .. `BTN85Setup` |
+| 17 | group 17 | `BTN86Setup` .. `BTN90Setup` |
+| 18 | group 18 | `BTN91Setup` .. `BTN95Setup` |
+| 19 | group 19 | `BTN96Setup` .. `BTN100Setup` |
+| 20 | group 20 | `BTN101Setup` .. `BTN105Setup` |
+| 21 | group 21 | `BTN106Setup` .. `BTN110Setup` |
+| 22 | group 22 | `BTN111Setup` .. `BTN115Setup` |
+| 23 | group 23 | `BTN116Setup` .. `BTN120Setup` |
+
+`sButtonDisable[i][g]` uses this same table. A set bit means that `BTN#Setup` button is disabled / not available, even if `sButtonInd` is also set.
+
+Examples:
+
+- No button LEDs on in group `g` -> `sButtonInd[i][g] = 0`
+- Only the first button LED on -> `1`
+- First and second on -> `1 + 2 = 3`
+- First and third on -> `1 + 4 = 5`
+- All five on -> `1 + 2 + 4 + 8 + 16 = 31`
+- Example TCS page: RESET DRIVE is group `0` with RESET as `BTN1Setup` (off), THRUSTER is group `1` with START as `BTN6Setup` (on) and STOP as `BTN7Setup` (off) -> `sButtonInd[i][0] = 0`, `sButtonInd[i][1] = 1`
 
 If the dashboard only needs standard thruster monitoring, you can skip this whole group.
 
@@ -388,3 +444,17 @@ NOTIFICATIONS lamps from `TCSView.ini` `IND#Setup`.
 | 2147483648 | `IND32Setup` on (signed display `-2147483648`) |
 
 Values can combine. Lamp labels for each `IND#Setup` come from vessel `TCSView.ini`.
+
+### Button LED bits (`sButtonInd[i][g]`)
+
+Custom TCS page button LEDs from `TCSView.ini` `BTN#Setup`. One value per group `g` (`0..23`).
+
+| Value | Meaning in that group |
+|---:|---|
+| 1 | 1st button on (`BTN{g*5+1}Setup`) |
+| 2 | 2nd button on (`BTN{g*5+2}Setup`) |
+| 4 | 3rd button on (`BTN{g*5+3}Setup`) |
+| 8 | 4th button on (`BTN{g*5+4}Setup`) |
+| 16 | 5th button on (`BTN{g*5+5}Setup`) |
+
+Values can combine (`0..31`). `sButtonDisable[i][g]` uses the same bits for disabled / not available. Button labels come from vessel `TCSView.ini`.
