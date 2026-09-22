@@ -223,10 +223,59 @@ These are project-specific. Labels come from vessel `TCSView.ini` / GUI config, 
 
 | Datapoint | What it is | What the value means |
 |---|---|---|
-| `lIndicators[i]` | Custom digital lamps for thruster `i` | Up to 32 bits (`0..31`). Bit meaning is vessel-defined. |
+| `lIndicators[i]` | Custom digital lamps for thruster `i` | 32-bit bitfield. Bit `n` = digital indicator channel `n` (`0..31`). Bit set = lamp on. Combined value is the sum of those bit weights. Lamp text is vessel-defined in `TCSView.ini`. |
 | `sButtonInd[i][g]` | Custom button LED state | Thruster `i`, button group `g` (`0..23`). Bits `0..4` are the five buttons in that group. Bit set = indication on. |
 | `sButtonDisable[i][g]` | Custom button unavailable state | Same packing as above. Bit set = button disabled / not available. |
 | `dAnalogIndValue[i][a]` | Custom analog indication | Thruster `i`, analog slot `a` (`0..9`). Meaning/unit come from vessel GUI config. |
+
+For `lIndicators[i]`, each value is one 32-bit number for thruster slot `i`. Channel `0` = bit 0, channel `1` = bit 1, ... channel `31` = bit 31:
+
+| Channel | Bit | Bit weight |
+|---:|---:|---:|
+| 0 | 0 | 1 |
+| 1 | 1 | 2 |
+| 2 | 2 | 4 |
+| 3 | 3 | 8 |
+| 4 | 4 | 16 |
+| 5 | 5 | 32 |
+| 6 | 6 | 64 |
+| 7 | 7 | 128 |
+| 8 | 8 | 256 |
+| 9 | 9 | 512 |
+| 10 | 10 | 1024 |
+| 11 | 11 | 2048 |
+| 12 | 12 | 4096 |
+| 13 | 13 | 8192 |
+| 14 | 14 | 16384 |
+| 15 | 15 | 32768 |
+| 16 | 16 | 65536 |
+| 17 | 17 | 131072 |
+| 18 | 18 | 262144 |
+| 19 | 19 | 524288 |
+| 20 | 20 | 1048576 |
+| 21 | 21 | 2097152 |
+| 22 | 22 | 4194304 |
+| 23 | 23 | 8388608 |
+| 24 | 24 | 16777216 |
+| 25 | 25 | 33554432 |
+| 26 | 26 | 67108864 |
+| 27 | 27 | 134217728 |
+| 28 | 28 | 268435456 |
+| 29 | 29 | 536870912 |
+| 30 | 30 | 1073741824 |
+| 31 | 31 | 2147483648 |
+
+The payload stores this as a signed 32-bit `long`. If channel 31 is on, a signed display of the raw number is negative (`-2147483648` when only bit 31 is set). Decode with unsigned 32-bit masking when possible: channel `n` is on when `(value & bit_weight) != 0`.
+
+To calculate an expected value, add the bit weights of the lamps that are currently on for that thruster. Unused or unconfigured channels stay `0`. Lamp names are not in the payload; map channel `n` for thruster `i` from that vessel's `TCSView.ini` / TCS GUI config.
+
+Examples:
+
+- No lamps on -> `0`
+- Only channel 0 on -> `1`
+- Channels 0 and 2 on -> `1 + 4 = 5`
+- Channels 0, 1, and 4 on -> `1 + 2 + 16 = 19`
+- Only channel 31 on -> unsigned `2147483648`, signed `-2147483648`
 
 If the dashboard only needs standard thruster monitoring, you can skip this whole group.
 
@@ -293,3 +342,42 @@ If the dashboard only needs standard thruster monitoring, you can skip this whol
 | 256 | TCSCC1 timeout |
 | 512 | TCSCC2 timeout |
 | 1024 | TCSCC3 timeout |
+
+### Digital indicator bits (`lIndicators[i]`)
+
+| Value | Meaning |
+|---:|---|
+| 1 | Channel 0 on |
+| 2 | Channel 1 on |
+| 4 | Channel 2 on |
+| 8 | Channel 3 on |
+| 16 | Channel 4 on |
+| 32 | Channel 5 on |
+| 64 | Channel 6 on |
+| 128 | Channel 7 on |
+| 256 | Channel 8 on |
+| 512 | Channel 9 on |
+| 1024 | Channel 10 on |
+| 2048 | Channel 11 on |
+| 4096 | Channel 12 on |
+| 8192 | Channel 13 on |
+| 16384 | Channel 14 on |
+| 32768 | Channel 15 on |
+| 65536 | Channel 16 on |
+| 131072 | Channel 17 on |
+| 262144 | Channel 18 on |
+| 524288 | Channel 19 on |
+| 1048576 | Channel 20 on |
+| 2097152 | Channel 21 on |
+| 4194304 | Channel 22 on |
+| 8388608 | Channel 23 on |
+| 16777216 | Channel 24 on |
+| 33554432 | Channel 25 on |
+| 67108864 | Channel 26 on |
+| 134217728 | Channel 27 on |
+| 268435456 | Channel 28 on |
+| 536870912 | Channel 29 on |
+| 1073741824 | Channel 30 on |
+| 2147483648 | Channel 31 on (signed display `-2147483648`) |
+
+Values can combine. Lamp labels for each channel come from vessel `TCSView.ini`.
