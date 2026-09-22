@@ -221,61 +221,66 @@ Map bit positions to vessel device names using the vessel network configuration.
 
 These are project-specific. Labels come from vessel `TCSView.ini` / GUI config, not from a global standard.
 
+`lIndicators[i]` is the live on/off state of the **NOTIFICATIONS** lamps on the TCS page for thruster slot `i`. Those lamps are configured in `TCSView.ini` as `IND#Setup` (`IND1Setup` ... `IND32Setup`). The payload carries only the lamp bits, not the text. Button widgets such as Start/Stop/Reset are `sButtonInd` / `sButtonDisable`, not `lIndicators`.
+
 | Datapoint | What it is | What the value means |
 |---|---|---|
-| `lIndicators[i]` | Custom digital lamps for thruster `i` | 32-bit bitfield. Bit `n` = digital indicator channel `n` (`0..31`). Bit set = lamp on. Combined value is the sum of those bit weights. Lamp text is vessel-defined in `TCSView.ini`. |
+| `lIndicators[i]` | NOTIFICATIONS lamps for thruster `i` | 32-bit bitfield of `IND#Setup` lamps. `IND1Setup` = bit 0, `IND2Setup` = bit 1, ... `IND32Setup` = bit 31. Bit set = lamp on. Combined value is the sum of those bit weights. Lamp text comes from that `IND#Setup` entry. |
 | `sButtonInd[i][g]` | Custom button LED state | Thruster `i`, button group `g` (`0..23`). Bits `0..4` are the five buttons in that group. Bit set = indication on. |
 | `sButtonDisable[i][g]` | Custom button unavailable state | Same packing as above. Bit set = button disabled / not available. |
 | `dAnalogIndValue[i][a]` | Custom analog indication | Thruster `i`, analog slot `a` (`0..9`). Meaning/unit come from vessel GUI config. |
 
-For `lIndicators[i]`, each value is one 32-bit number for thruster slot `i`. Channel `0` = bit 0, channel `1` = bit 1, ... channel `31` = bit 31:
+For `lIndicators[i]`, each value is one 32-bit number for thruster slot `i`. `TCSView.ini` keys are 1-based (`IND1Setup` is channel 0 / bit 0):
 
-| Channel | Bit | Bit weight |
-|---:|---:|---:|
-| 0 | 0 | 1 |
-| 1 | 1 | 2 |
-| 2 | 2 | 4 |
-| 3 | 3 | 8 |
-| 4 | 4 | 16 |
-| 5 | 5 | 32 |
-| 6 | 6 | 64 |
-| 7 | 7 | 128 |
-| 8 | 8 | 256 |
-| 9 | 9 | 512 |
-| 10 | 10 | 1024 |
-| 11 | 11 | 2048 |
-| 12 | 12 | 4096 |
-| 13 | 13 | 8192 |
-| 14 | 14 | 16384 |
-| 15 | 15 | 32768 |
-| 16 | 16 | 65536 |
-| 17 | 17 | 131072 |
-| 18 | 18 | 262144 |
-| 19 | 19 | 524288 |
-| 20 | 20 | 1048576 |
-| 21 | 21 | 2097152 |
-| 22 | 22 | 4194304 |
-| 23 | 23 | 8388608 |
-| 24 | 24 | 16777216 |
-| 25 | 25 | 33554432 |
-| 26 | 26 | 67108864 |
-| 27 | 27 | 134217728 |
-| 28 | 28 | 268435456 |
-| 29 | 29 | 536870912 |
-| 30 | 30 | 1073741824 |
-| 31 | 31 | 2147483648 |
+| Channel | `TCSView.ini` key | Bit | Bit weight |
+|---:|---|---:|---:|
+| 0 | `IND1Setup` | 0 | 1 |
+| 1 | `IND2Setup` | 1 | 2 |
+| 2 | `IND3Setup` | 2 | 4 |
+| 3 | `IND4Setup` | 3 | 8 |
+| 4 | `IND5Setup` | 4 | 16 |
+| 5 | `IND6Setup` | 5 | 32 |
+| 6 | `IND7Setup` | 6 | 64 |
+| 7 | `IND8Setup` | 7 | 128 |
+| 8 | `IND9Setup` | 8 | 256 |
+| 9 | `IND10Setup` | 9 | 512 |
+| 10 | `IND11Setup` | 10 | 1024 |
+| 11 | `IND12Setup` | 11 | 2048 |
+| 12 | `IND13Setup` | 12 | 4096 |
+| 13 | `IND14Setup` | 13 | 8192 |
+| 14 | `IND15Setup` | 14 | 16384 |
+| 15 | `IND16Setup` | 15 | 32768 |
+| 16 | `IND17Setup` | 16 | 65536 |
+| 17 | `IND18Setup` | 17 | 131072 |
+| 18 | `IND19Setup` | 18 | 262144 |
+| 19 | `IND20Setup` | 19 | 524288 |
+| 20 | `IND21Setup` | 20 | 1048576 |
+| 21 | `IND22Setup` | 21 | 2097152 |
+| 22 | `IND23Setup` | 22 | 4194304 |
+| 23 | `IND24Setup` | 23 | 8388608 |
+| 24 | `IND25Setup` | 24 | 16777216 |
+| 25 | `IND26Setup` | 25 | 33554432 |
+| 26 | `IND27Setup` | 26 | 67108864 |
+| 27 | `IND28Setup` | 27 | 134217728 |
+| 28 | `IND29Setup` | 28 | 268435456 |
+| 29 | `IND30Setup` | 29 | 536870912 |
+| 30 | `IND31Setup` | 30 | 1073741824 |
+| 31 | `IND32Setup` | 31 | 2147483648 |
 
 The payload stores this as a signed 32-bit `long`. If channel 31 is on, a signed display of the raw number is negative (`-2147483648` when only bit 31 is set). Decode with unsigned 32-bit masking when possible: channel `n` is on when `(value & bit_weight) != 0`.
 
-To calculate an expected value, add the bit weights of the lamps that are currently on for that thruster. Unused or unconfigured channels stay `0`. Lamp names are not in the payload; map channel `n` for thruster `i` from that vessel's `TCSView.ini` / TCS GUI config.
+To calculate an expected value, add the bit weights of the NOTIFICATIONS lamps that are currently on for that thruster. Unused or unconfigured `IND#Setup` channels stay `0`. Read the lamp text from that thruster's `IND#Setup` entries in `TCSView.ini`.
+
+This is not the same datapoint as `sThrusterRunning`. A TCS page can show a "THRUSTER RUNNING" notification lamp via `IND#Setup` while `sThrusterRunning` is the standard per-thruster running bitfield.
 
 Examples:
 
 - No lamps on -> `0`
-- Only channel 0 on -> `1`
-- Channels 0 and 2 on -> `1 + 4 = 5`
-- Channels 0, 1, and 4 on -> `1 + 2 + 16 = 19`
-- Only channel 31 on -> unsigned `2147483648`, signed `-2147483648`
+- Only `IND1Setup` on -> `1`
+- `IND1Setup` and `IND3Setup` on -> `1 + 4 = 5`
+- `IND1Setup`, `IND2Setup`, and `IND5Setup` on -> `1 + 2 + 16 = 19`
+- Only `IND32Setup` on -> unsigned `2147483648`, signed `-2147483648`
+- Example TCS page with `IND1Setup` = THRUSTER RUNNING (on) and `IND2Setup` = BACKUP IN COMMAND (off) -> `1`
 
 If the dashboard only needs standard thruster monitoring, you can skip this whole group.
 
@@ -345,39 +350,41 @@ If the dashboard only needs standard thruster monitoring, you can skip this whol
 
 ### Digital indicator bits (`lIndicators[i]`)
 
+NOTIFICATIONS lamps from `TCSView.ini` `IND#Setup`.
+
 | Value | Meaning |
 |---:|---|
-| 1 | Channel 0 on |
-| 2 | Channel 1 on |
-| 4 | Channel 2 on |
-| 8 | Channel 3 on |
-| 16 | Channel 4 on |
-| 32 | Channel 5 on |
-| 64 | Channel 6 on |
-| 128 | Channel 7 on |
-| 256 | Channel 8 on |
-| 512 | Channel 9 on |
-| 1024 | Channel 10 on |
-| 2048 | Channel 11 on |
-| 4096 | Channel 12 on |
-| 8192 | Channel 13 on |
-| 16384 | Channel 14 on |
-| 32768 | Channel 15 on |
-| 65536 | Channel 16 on |
-| 131072 | Channel 17 on |
-| 262144 | Channel 18 on |
-| 524288 | Channel 19 on |
-| 1048576 | Channel 20 on |
-| 2097152 | Channel 21 on |
-| 4194304 | Channel 22 on |
-| 8388608 | Channel 23 on |
-| 16777216 | Channel 24 on |
-| 33554432 | Channel 25 on |
-| 67108864 | Channel 26 on |
-| 134217728 | Channel 27 on |
-| 268435456 | Channel 28 on |
-| 536870912 | Channel 29 on |
-| 1073741824 | Channel 30 on |
-| 2147483648 | Channel 31 on (signed display `-2147483648`) |
+| 1 | `IND1Setup` on |
+| 2 | `IND2Setup` on |
+| 4 | `IND3Setup` on |
+| 8 | `IND4Setup` on |
+| 16 | `IND5Setup` on |
+| 32 | `IND6Setup` on |
+| 64 | `IND7Setup` on |
+| 128 | `IND8Setup` on |
+| 256 | `IND9Setup` on |
+| 512 | `IND10Setup` on |
+| 1024 | `IND11Setup` on |
+| 2048 | `IND12Setup` on |
+| 4096 | `IND13Setup` on |
+| 8192 | `IND14Setup` on |
+| 16384 | `IND15Setup` on |
+| 32768 | `IND16Setup` on |
+| 65536 | `IND17Setup` on |
+| 131072 | `IND18Setup` on |
+| 262144 | `IND19Setup` on |
+| 524288 | `IND20Setup` on |
+| 1048576 | `IND21Setup` on |
+| 2097152 | `IND22Setup` on |
+| 4194304 | `IND23Setup` on |
+| 8388608 | `IND24Setup` on |
+| 16777216 | `IND25Setup` on |
+| 33554432 | `IND26Setup` on |
+| 67108864 | `IND27Setup` on |
+| 134217728 | `IND28Setup` on |
+| 268435456 | `IND29Setup` on |
+| 536870912 | `IND30Setup` on |
+| 1073741824 | `IND31Setup` on |
+| 2147483648 | `IND32Setup` on (signed display `-2147483648`) |
 
-Values can combine. Lamp labels for each channel come from vessel `TCSView.ini`.
+Values can combine. Lamp labels for each `IND#Setup` come from vessel `TCSView.ini`.
